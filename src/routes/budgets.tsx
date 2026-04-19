@@ -50,11 +50,13 @@ function BudgetsPage() {
   }, [txs]);
 
   const setBudget = async (categoryId: string, amount: number) => {
+    if (!user?.id) return;
+
     if (!amount || amount < 0) {
       await supabase.from("budgets").delete().eq("category_id", categoryId).eq("month", monthStr);
     } else {
       await supabase.from("budgets").upsert(
-        { user_id: user!.id, category_id: categoryId, amount, month: monthStr },
+        { user_id: user.id, category_id: categoryId, amount, month: monthStr },
         { onConflict: "user_id,category_id,month" }
       );
     }
