@@ -59,7 +59,7 @@ function BudgetsPage() {
       );
     }
     toast.success("Budget saved");
-    load();
+    await load(user.id);
   };
 
   if (loading) return null;

@@ -60,12 +60,12 @@ function TransactionsPage() {
     if (error) return toast.error(error.message);
     toast.success("Added");
     setAmount(""); setNote(""); setOpen(false);
-    load();
+    await load(user.id);
   };
 
   const remove = async (id: string) => {
     await supabase.from("transactions").delete().eq("id", id);
-    load();
+    await load(user.id);
   };
 
   const filteredCats = cats.filter((c) => c.type === type);
