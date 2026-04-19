@@ -42,7 +42,12 @@ function AuthPage() {
         navigate({ to: "/dashboard" });
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Something went wrong");
+      const msg = err?.message ?? "Something went wrong";
+      if (msg.toLowerCase().includes("rate limit")) {
+        toast.error("Too many attempts. Please wait ~60 seconds and try again.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBusy(false);
     }
