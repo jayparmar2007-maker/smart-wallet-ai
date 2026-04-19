@@ -26,21 +26,22 @@ function BudgetsPage() {
   const [currency, setCurrency] = useState("USD");
   const monthStr = format(startOfMonth(new Date()), "yyyy-MM-dd");
 
-  const load = async () => {
+  const load = async (userId: string) => {
     const s = format(startOfMonth(new Date()), "yyyy-MM-dd");
     const e = format(endOfMonth(new Date()), "yyyy-MM-dd");
-    const [{ data: c }, { data: b }, { data: t }, { data: p }] = await Promise.all([
-      supabase.from("categories").select("*").eq("type", "expense"),
-      supabase.from("budgets").select("*").eq("month", s),
-      supabase.from("transactions").select("amount,category_id,type,occurred_on").eq("type", "expense").gte("occurred_on", s).lte("occurred_on", e),
-      supabase.from("profiles").select("currency").eq("user_id", user!.id).maybeSingle(),
-    ]);
+    const { data: c } = await supabase.from("categories").select("*").eq("type", "expense");
+    const { data: b } = await supabase.from("budgets").select("*").eq("month", s);
+    const { data: t } = await supabase.from("transactions").select("amount,category_id,type,occurred_on").eq("type", "expense").gte("occurred_on", s).lte("occurred_on", e);
+    const { data: p } = await supabase.from("profiles").select("currency").eq("user_id", userId).maybeSingle();
     setCats((c ?? []) as Cat[]);
     setBudgets((b ?? []) as Budget[]);
     setTxs((t ?? []) as Tx[]);
     setCurrency((p as any)?.currency ?? "USD");
   };
-  useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    if (!user?.id) return;
+    void load(user.id);
+  }, [user?.id]);
 
   const spent = useMemo(() => {
     const m = new Map<string, number>();

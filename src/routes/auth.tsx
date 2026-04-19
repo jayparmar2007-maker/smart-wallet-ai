@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,6 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const navigate = useNavigate();
 
   if (!loading && user) return <Navigate to="/dashboard" />;
 
@@ -30,16 +29,16 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email, password,
-          options: { emailRedirectTo: `${window.location.origin}/dashboard`, data: { display_name: name } },
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin, data: { display_name: name } },
         });
         if (error) throw error;
         toast.success("Welcome to Lumen!");
-        navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/dashboard" });
+        toast.success("Signed in");
       }
     } catch (err: any) {
       const msg = err?.message ?? "Something went wrong";

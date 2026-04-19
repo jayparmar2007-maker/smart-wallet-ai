@@ -13,23 +13,32 @@ const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, s
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
-    // 1. Set up listener FIRST (synchronous state updates only — no async work here)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const applySession = (nextSession: Session | null) => {
       if (!mounted) return;
-      setSession(s);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
       setLoading(false);
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+
+      if (event === "TOKEN_REFRESHED") {
+        setSession(nextSession);
+        return;
+      }
+
+      applySession(nextSession);
     });
 
-    // 2. THEN check existing session
     supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      setLoading(false);
+      applySession(data.session);
     });
 
     return () => {
@@ -41,13 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider
       value={{
-        user: session?.user ?? null,
+        user,
         session,
         loading,
         signOut: async () => {
           setSession(null);
+          setUser(null);
+          setLoading(false);
           try {
-            await supabase.auth.signOut();
+            await supabase.auth.signOut({ scope: "local" });
           } catch (err) {
             console.error("signOut error:", err);
           }

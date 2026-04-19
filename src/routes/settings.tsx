@@ -23,7 +23,7 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
       setName(data.display_name ?? "");
@@ -31,7 +31,7 @@ function SettingsPage() {
       setGoal(String(data.savings_goal ?? ""));
       setCurrency(data.currency ?? "USD");
     });
-  }, [user]);
+  }, [user?.id]);
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" />;
