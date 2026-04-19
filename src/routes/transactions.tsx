@@ -32,18 +32,19 @@ function TransactionsPage() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [currency, setCurrency] = useState("USD");
 
-  const load = async () => {
-    const [{ data: t }, { data: c }, { data: p }] = await Promise.all([
-      supabase.from("transactions").select("*").order("occurred_on", { ascending: false }).limit(200),
-      supabase.from("categories").select("*"),
-      supabase.from("profiles").select("currency").eq("user_id", user!.id).maybeSingle(),
-    ]);
+  const load = async (userId: string) => {
+    const { data: t } = await supabase.from("transactions").select("*").order("occurred_on", { ascending: false }).limit(200);
+    const { data: c } = await supabase.from("categories").select("*");
+    const { data: p } = await supabase.from("profiles").select("currency").eq("user_id", userId).maybeSingle();
     setTxs((t ?? []) as Tx[]);
     setCats((c ?? []) as Cat[]);
     setCurrency((p as any)?.currency ?? "USD");
   };
 
-  useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    if (!user?.id) return;
+    void load(user.id);
+  }, [user?.id]);
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" />;
@@ -59,12 +60,12 @@ function TransactionsPage() {
     if (error) return toast.error(error.message);
     toast.success("Added");
     setAmount(""); setNote(""); setOpen(false);
-    load();
+    await load(user.id);
   };
 
   const remove = async (id: string) => {
     await supabase.from("transactions").delete().eq("id", id);
-    load();
+    await load(user.id);
   };
 
   const filteredCats = cats.filter((c) => c.type === type);

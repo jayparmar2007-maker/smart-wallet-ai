@@ -23,19 +23,38 @@ function Dashboard() {
   const [profile, setProfile] = useState<{ display_name: string | null; currency: string; monthly_income: number } | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+
+    let cancelled = false;
+
     (async () => {
       const since = format(subMonths(startOfMonth(new Date()), 5), "yyyy-MM-dd");
-      const [{ data: t }, { data: c }, { data: p }] = await Promise.all([
-        supabase.from("transactions").select("*").gte("occurred_on", since).order("occurred_on", { ascending: false }),
-        supabase.from("categories").select("*"),
-        supabase.from("profiles").select("display_name,currency,monthly_income").eq("user_id", user.id).maybeSingle(),
-      ]);
+      const { data: t } = await supabase
+        .from("transactions")
+        .select("*")
+        .gte("occurred_on", since)
+        .order("occurred_on", { ascending: false });
+      if (cancelled) return;
+
+      const { data: c } = await supabase.from("categories").select("*");
+      if (cancelled) return;
+
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("display_name,currency,monthly_income")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+
       setTxs((t ?? []) as Tx[]);
       setCats((c ?? []) as Cat[]);
       setProfile(p as any);
     })();
-  }, [user]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const currency = profile?.currency ?? "USD";
 
